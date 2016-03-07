@@ -10,6 +10,9 @@ var ConversorUTILS = function(){
 	return{
 		isASCII : function(str) {
     		return /^[\x00-\x7F]*$/.test(str);
+		},
+		isNumeric : function(str){
+			return !isNaN(parseFloat(str)) && isFinite(str);
 		}
 	}
 }();
@@ -25,6 +28,7 @@ var ConversorDados = (function(){
 	var $ano = $("#ano");
 
 	var $dropPlanilha = $("#drop-planilha");
+	var $planilhaInfo = $("#planilha-info");
 	var $salvarConfiguracao = $("#salvar-configuracao");
 	var $importarConfiguracao = $("#importar-configuracao");
 	var $fileImportarConfiguracao = $("#importar-configuracao :file");
@@ -54,6 +58,7 @@ var ConversorDados = (function(){
 				      return mostrarMensagemErro("Um erro ocorreu durante a leitura do arquivo.");
 				   }
 				   console.log("Stop....");
+				   $planilhaInfo.text(name);
 				}
 				//if (data.length > 500000) alertify.confirm("This file is " + data.length + "bytes and may take few moments. Your browser may lock up during this process. Shall we proceed?",function(e){ if(e) doit(); else console.log("Stop ...");}); 
 				//else { doit(); console.log("Stop....");}
@@ -87,7 +92,6 @@ var ConversorDados = (function(){
 			return mostrarMensagemErro("Nenhum arquivo foi selecionado.");
 		}
 		else{
-			console.log(this);
 			var file = this.files[0];
 			var reader = new FileReader();
 			reader.onload = function(){
@@ -114,12 +118,12 @@ var ConversorDados = (function(){
 		alertify.alert(mensagem);
 	}
 
-	function getValorBloco(celulaBloco,localizacao){
+	function getBloco(celulaBloco,localizacao){
 		if(celulaBloco == undefined || celulaBloco.w === ""){
 			mostrarMensagemErro("Ocorreu um erro ao processar a solicitacao em: "+ localizacao);
 			throw "Erro em: " + localizacao;
 		}
-		var valorBloco = celulaBloco['w'].replace('Bloco').trim();
+		var valorBloco = celulaBloco['w'].replace('Bloco',"").trim();
 		if(valorBloco.length > 4){
 			mostrarMensagemErro("Ocorreu um erro em :"+localizacao+", o bloco possui mais de 4 caracteres.");
 			throw "Erro em : " + localizacao;
@@ -129,37 +133,37 @@ var ConversorDados = (function(){
 		}
 	}
 
-	function getNumeroApartamento(celulaApartamento,localizacao){
-		if(celulaApartamento == undefined || celulaApartamento.w === ""){
+	function getUnidade(celulaUnidade,localizacao){
+		if(celulaUnidade == undefined || celulaUnidade.w === ""){
 			mostrarMensagemErro("Ocorreu um erro ao processar a solicitacao em : "+ localizacao);
 			throw "Erro em: "+localizacao;
 		}
-		var valorApartamento = celulaApartamento['w'].trim();
-		if(valorApartamento.length > 6){
+		var valorUnidade = celulaUnidade['w'].trim();
+		if(valorUnidade.length > 6){
 			mostrarMensagemErro("Ocorreu um erro em :"+localizacao+", o apartamento possui mais de 6 caracteres.");
 			throw "Erro em: "+localizacao;
 		}
 		else{
-			return valorApartamento;
+			return valorUnidade;
 		}
 	}
 
-	function getValorLeituraAnterior(celulaLeituraAtual,localizacao){
+	function getValorNumerico(celula,localizacao){
+		if(celula == undefined || celula.w === ""){
+			mostrarMensagemErro("Ocorreu um erro ao processar a solicitacao em : "+ localizacao);
+			throw "Erro em: "+localizacao;
+		}
+
+		if(celula['t'] !== "n" || !ConversorUTILS.isNumeric(celula['w'])){
+			mostrarMensagemErro("Era esperado um valor numérico em: "+localizacao);
+			throw "Erro em: " + localizacao;
+		}
+		else{
+			var valorNumerico = celula['w'].trim();	
+			return valorNumerico;
+		}
+	 }
 		
-	}
-
-	function getValorLeituraAtual(celulaLeituraAtual,localizacao){
-
-	}
-
-	function getValorConsumo(celulaConsumo,localizacao){
-
-	}
-
-	function getValor(celulaValor,localizacao){
-
-	}
-
 	return {
 	    buildConfig : function(){
 			var config = {};
@@ -256,6 +260,7 @@ var ConversorDados = (function(){
 		},
 
 		gerarArquivo : function(){
+			var data = "";
 			//Build Config
 			try{
 				config = this.buildConfig();
@@ -272,32 +277,148 @@ var ConversorDados = (function(){
 				return mostrarMensagemErro("O arquivo não possui planilhas criadas.");
 			}
 			
-			sheet = workbook.Sheets[workbook.SheetNames[0]]
+			var sheet = workbook.Sheets[workbook.SheetNames[0]]
 			//Erro Interno da Biblioteca
 			if(sheet == undefined){
 				return mostrarMensagemErro("Um erro ocorreu ao processar o arquivo.")
 			}	
-
-			var localizacaoDoPrimeiroBloco = "A10";
+			var localizacaoBloco = "A10";
 			var offsetBlocoApartamento = 3;
 			var linhaAtual = 10;
-			var celulaBloco = sheet[localizacaoDoPrimeiroBloco]
+			var celulaBloco = sheet[localizacaoBloco]
 			if(celulaBloco == undefined){
 				return mostrarMensagemErro("A planilha não contém um bloco na localização A10");
 			}
 
 			while(celulaBloco != undefined){
 				try{
-					config["bloco"] = getValorBloco(celulaBloco);
+					config["bloco"] = getBloco(celulaBloco,localizacaoBloco);
 				}
 				catch(err){
-					return;
+					break;
 				}
 
+				linhaAtual += offsetBlocoApartamento;
 
-				var celulaBloco = sheet["A" + linhaAtual]; 
+				//Loops Apartamentos
+				do{
+					var localizacaoUnidade = "A"+linhaAtual;
+					var localizacaoMedicaoAnterior = "B" + linhaAtual;
+					var localizacaoMedicaoAtual = "C" + linhaAtual;
+					var localizacaoConsumo = "D" + linhaAtual;
+					var localizacaoValor = "F" + linhaAtual;
+
+					var celulaUnidade = sheet[localizacaoUnidade];
+					var celulaMedicaoAnterior = sheet[localizacaoMedicaoAnterior];
+					var celulaMedicaoAtual = sheet[localizacaoMedicaoAtual];
+					var celulaConsumo = sheet[localizacaoConsumo];
+					var celulaValor = sheet[localizacaoValor];
+					
+					//Condicao de Parada
+					if(celulaUnidade === undefined || celulaUnidade == ""){
+						break;
+					}
+
+					try{
+						config["unidade"] = getUnidade(celulaUnidade,localizacaoUnidade);
+						config["leituraAnterior"] = getValorNumerico(celulaMedicaoAnterior,localizacaoMedicaoAnterior);
+						config["leituraAtual"] = getValorNumerico(celulaMedicaoAtual,localizacaoMedicaoAtual);
+						config["consumo"] = getValorNumerico(celulaConsumo,localizacaoConsumo);
+						config["valor"] = getValorNumerico(celulaValor,localizacaoValor);
+					}
+					catch(err){
+						return;
+					}
+
+					linhaAtual+=1;
+
+					data += this.gerarArquivoDeConfiguracaoParaUnidade(config);
+				}while(true);
+				linhaAtual+=1;
+				localizacaoBloco = "A" + linhaAtual;
+				celulaBloco = sheet[localizacaoBloco]; 
 			}
+
+			var blob = new Blob([data], {type: "text/plain;charset=us-ascii"});
+			saveAs(blob, "gosoft.txt");
 		},	
+
+		gerarArquivoDeConfiguracaoParaUnidade : function(config){
+			var data = "";
+			var padding = 0;
+			function makePadding(padding,padChar){
+				if(padding < 0){
+					throw "Erro Interno: Padding não pode ser menor que zero";
+				}
+				else{
+					var data = "";
+					var i;
+					for(i=0;i<padding;i++){
+						data += padChar;
+					}
+					return data;
+				}
+			}
+
+			function virgulaDecimal(str,maxInteiro,maxDecimal){
+				var number = str.split(".");
+				var data = "";
+				if(number.length > 2 || number.length < 1){
+					throw "Erro Interno: Mais de um ponto contido no numero";
+				}
+				else if(number.length == 1){
+					number[1] = "";
+				}
+				else if(number.length == 2 && number[1].length>maxDecimal){
+					number[1] = number[1].substring(0,maxDecimal-1);
+				}
+				else if(number.length == 2 && number[0].length>maxInteiro){
+					number[0] = number[0].substr(number[0].length-1-maxInteiro,number[0].length-1)
+				}
+
+				var parteInteira = makePadding(maxInteiro-number[0].length,"0") + number[0];
+				var parteDecimal = number[1] + makePadding(maxDecimal-number[1].length,"0");
+
+				return parteInteira + parteDecimal;
+			}
+
+			//TIPO
+			padding = (10 - config.tipo.length);
+			console.log(padding);
+			data += config.tipo +makePadding(padding," ");
+			//VERSAO
+			padding = (2 - config.versao.length);
+			data += makePadding(padding,"0") + config.versao;
+			//CODIGO DO CONDOMINIO
+			padding = (4 - config.codigoCondominio.length);
+			data += makePadding(padding,"0") + config.codigoCondominio;
+			//BLOCO
+			padding = (4 - config.bloco.length);
+			data += makePadding(padding," ") + config.bloco;
+			//UNIDADE
+			padding = (6 - config.unidade.length);
+			data += makePadding(padding," ") + config.unidade; 
+			//DATA LEITURA
+			padding = (10 - config.dataLeitura.length);
+			data += config.dataLeitura + makePadding(padding," ");
+			//MES
+			padding = (2 - config.mes.length);
+			data += makePadding(padding,"0") + config.mes;
+			//ANO
+			padding = (4 - config.ano.length);
+			data += makePadding(padding,"0") + config.ano;
+			//LEITURA ANTERIOR
+			data += virgulaDecimal(config.leituraAnterior,10,4);
+			//LEITURA ATUAL
+			data += virgulaDecimal(config.leituraAtual,10,4);
+			//CONSUMO
+			data += virgulaDecimal(config.consumo,10,4);
+			//VALOR
+			data += virgulaDecimal(config.valor,12,2);
+			//NEWLINE
+			data += '\n';
+			return data;
+		},
 
 		salvarConfiguracao : function(){
 			//Build Config
