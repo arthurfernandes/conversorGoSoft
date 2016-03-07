@@ -1,192 +1,202 @@
 /*
 * @requires XLSX
+* @requires jQuery as $
+* @requires alertify
 */
 
-function get_radio_value( radioName ) {
-	var radios = document.getElementsByName( radioName );
-	for( var i = 0; i < radios.length; i++ ) {
-		if( radios[i].checked ) {
-			return radios[i].value;
+"use strict"
+var ConversorUTILS = function(){
+	return{
+		isASCII : function(str) {
+    		return /^[\x00-\x7F]*$/.test(str);
 		}
 	}
-}
+}();
 
-function to_json(workbook) {
-	var result = {};
-	workbook.SheetNames.forEach(function(sheetName) {
-		var roa = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
-		if(roa.length > 0){
-			result[sheetName] = roa;
-		}
-	});
-	global workbook = workbook
-	return result;
-}
+var ConversorDados = (function(){
+	//CACHE DOM
+	var $tipo = $("#tipo"); 
+	var $versao = $("#versao"); 
+	var $codigoCondominio = $("#codigo-condominio");
+	var $dataLeitura = $("#data-leitura");
+	var $mes = $("#mes");
+	var $ano = $("#ano");
 
-function to_csv(workbook) {
-	var result = [];
-	workbook.SheetNames.forEach(function(sheetName) {
-		var csv = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
-		if(csv.length > 0){
-			result.push("SHEET: " + sheetName);
-			result.push("");
-			result.push(csv);
+	var $dropPlanilha = $("#drop-planilha");
+	
+	var workbook = undefined;
+	//Bind Events
+	function _handleDrop(e) {
+		e.stopPropagation();
+		e.preventDefault();
+		var files = e.dataTransfer.files;
+		var i,f;
+		for (i = 0, f = files[i]; i != files.length; ++i) {
+			var reader = new FileReader();
+			var name = f.name;
+			reader.onload = function(e) {
+			    console.log("Start ... ");
+				// alertify.alert("Strating Excel Processing ");
+				var data = e.target.result;
+				var cfb, wb;
+				function doit(){
+				   try{
+						var arr = String.fromCharCode.apply(null, new Uint8Array(data));
+						var wb = XLSX.read(btoa(arr), {type: 'base64'});
+						workbook = wb;
+				   } catch(e){
+				      console.log(e, e.stack);
+				   }
+				   console.log("Stop....");
+				}
+				//if (data.length > 500000) alertify.confirm("This file is " + data.length + "bytes and may take few moments. Your browser may lock up during this process. Shall we proceed?",function(e){ if(e) doit(); else console.log("Stop ...");}); 
+				//else { doit(); console.log("Stop....");}
+				doit();
+			};
+			reader.readAsArrayBuffer(f);
 		}
-	});
-	return result.join("\n");
-}
-
-function to_formulae(workbook) {
-	var result = [];
-	workbook.SheetNames.forEach(function(sheetName) {
-		var formulae = XLSX.utils.get_formulae(workbook.Sheets[sheetName]);
-		if(formulae.length > 0){
-			result.push("SHEET: " + sheetName);
-			result.push("");
-			result.push(formulae.join("\n"));
-		}
-	});
-	return result.join("\n");
-}
-
-var tarea = document.getElementById('b64data');
-function b64it() {
-	var wb = XLSX.read(tarea.value, {type: 'base64'});
-	process_wb(wb);
-}
-
-function customValidateSheets(resultObj){
-    // validate Client Information
-	var output = "";
-	$(resultObj.ClientDetails).each(function(index, element){
-		if (element.Client_Name === undefined){
-		   output = { "message" : "Client Name missing in data", "messageCode" : "10001", "messageExceptions" : "", "messageParams": ""};
-		   alert("Client Name Missing");
-		   return output;
-		}
-		if (element.Client_GUID === undefined){
-		   output = { "message" : "Client GUID missing in data", "messageCode" : "10001", "messageExceptions" : "", "messageParams": ""};
-		   alert("Client GUID Missing");
-		   return output;
-		}
-		if (element.Client_URL === undefined){
-		   output = { "message" : "Client URL missing in data", "messageCode" : "10001", "messageExceptions" : "", "messageParams": ""};
-		   alert("Client URL Missing");
-		   return output;
-		}
-	});
-	// validate if resource have missing identifiers
-	$(resultObj.Prices).each(function(index, element){ 
-		if(element.Identifier === undefined 
-		&& element.Price_per_Enrolment != undefined ){ 
-		   output = { "message" : "Resources with missing Identifiers exist", "messageCode" : "20001", "messageExceptions" : "", "messageParams": element};
-		   alert("Resources with Missing Identifiers exist");
-		   return output;
-		}
-	});
-	// validate if resource types missing identifiers
-	$(resultObj.ResourceTypes).each(function(index, element){ 
-		if(element.RESOURCE_TYPE === undefined 
-		&& element.Price != undefined ){ 
-		   output = { "message" : "Resources Types with missing Identifiers exist", "messageCode" : "20001", "messageExceptions" : "", "messageParams": element};
-		   alert("Resource Types with Missing Identifiers exist");
-		   return output;
-		}
-	});
-	return output;
-}
-
-function process_wb(wb) {
-	var output = "";
-	var resultObj = "";
-	switch(get_radio_value("format")) {
-		case "json":
-			resultObj = to_json(wb);
-			var errorMessages = customValidateSheets(resultObj);
-			// output = JSON.stringify(resultObj, 2, 2);
-			break;
-		case "form":
-			output = to_formulae(wb);
-			break; 
-		default:
-		output = to_csv(wb);
 	}
-	var clientDetails = JSON.stringify(resultObj.ClientDetails,2,2);
-	// assume we need Price changed resources only 
-	var resourcePrices = $.map(resultObj.Prices, 
-				           function(obj) { if(obj.Price_Change !== undefined) return obj; }
-		                 );
-	resourcePrices = JSON.stringify(resourcePrices,2,2);
-	// assume we need price changed resource types only
-	var resourceTypePrices = $.map(resultObj.ResourceTypes, 
-				              function(obj) {	if(obj.Change_To !== undefined) return obj; }
-		                     );
-	resourceTypePrices = JSON.stringify(resourceTypePrices,2,2);
-	if (errorMessages !== undefined && errorMessages !== ""){ 
-	   out.innerText = JSON.stringify(errorMessages,2,2); 
-	} else {
-		out.innerText = clientDetails + resourcePrices + resourceTypePrices;
-	}
-	// if(out.innerText === undefined) out.textContent = output; else out.innerText = customResult; 
-}
 
-var drop = document.getElementById('drop');
-function handleDrop(e) {
-	e.stopPropagation();
-	e.preventDefault();
-	var files = e.dataTransfer.files;
-	var i,f;
-	for (i = 0, f = files[i]; i != files.length; ++i) {
-		var reader = new FileReader();
-		var name = f.name;
-		reader.onload = function(e) {
-		    console.log("Start ... ");
-			// alertify.alert("Strating Excel Processing ");
-			var data = e.target.result;
-			var cfb, wb;
-			function doit(){
-			   try{
-			      // gives Type error has no method 'charCodeAt' needs investigation
-			      //if (e.target.result.charCodeAt(0) == 0xd0) {
-				  //  cfb = XLS.CFB.read(data, {type: 'binary'});
-				  //	wb = XLS.parse_xlscfb(cfb);
-				  //	process_wb(wb);
-				  //}
-			      //else {
-				    //wb = XLSX.read(data, {type: 'binary'});
-					//process_wb(wb, 'XLSX');
-					arr = String.fromCharCode.apply(null, new Uint8Array(data));
-					wb = XLSX.read(btoa(arr), {type: 'base64'});
-					process_wb(wb);
-				  //}
-			   } catch(e){
-			      console.log(e, e.stack);
-				  // alertify.alert("We cannot process this file, contact your system Admin");
-			   }
-			   console.log("Stop....");
+	function _handleDragover(e) {
+		e.stopPropagation();
+		e.preventDefault();
+		e.dataTransfer.dropEffect = 'copy';
+	}
+
+	if($dropPlanilha.get(0).addEventListener) {
+		$dropPlanilha.get(0).addEventListener('dragenter', _handleDragover, false);
+		$dropPlanilha.get(0).addEventListener('dragover', _handleDragover, false);
+		$dropPlanilha.get(0).addEventListener('drop', _handleDrop, false);
+	}
+
+	return {
+		esconderMensagemErro : function(){
+			// self.$mensagemErro.hide();
+		},
+
+	 	mostrarMensagemErro : function(mensagem){
+			alertify.alert(mensagem);
+		},
+
+	    buildConfig : function(){
+			var config = {};
+			config.tipo = $tipo.val();
+			config.versao = $versao.val();
+			config.codigoCondominio = $codigoCondominio.val();
+			config.dataLeitura = $dataLeitura.val();
+			config.mes = $mes.val();
+			config.ano = $ano.val();
+
+			if(!this.validarFormulario(config)){
+				return config;
 			}
-			//if (data.length > 500000) alertify.confirm("This file is " + data.length + "bytes and may take few moments. Your browser may lock up during this process. Shall we proceed?",function(e){ if(e) doit(); else console.log("Stop ...");}); 
-			//else { doit(); console.log("Stop....");}
-			doit();
-			//arr = String.fromCharCode.apply(null, new Uint8Array(data));
-			//wb = XLSX.read(btoa(arr), {type: 'base64'});
-			//process_wb(wb);
-		};
-		//reader.readAsBinaryString(f);
-		reader.readAsArrayBuffer(f);
+			else{
+				throw "O formulário contém erros de preenchimento.";
+			}
+		},
+
+		validarFormulario : function(config){
+			var contemErros = false;
+			resetarCampos();
+			//TIPO
+			var tipo = config.tipo;
+			if(tipo == undefined || tipo === "" || !ConversorUTILS.isASCII(tipo) || tipo.length > 10){
+				invalidarCampo($tipo);
+				contemErros = true;
+			}
+			else{
+				validarCampo($tipo);
+			}
+			//VERSAO
+			var versao = config.versao;
+			if(versao == undefined || versao === "" || isNaN(versao) || versao.length > 2){
+				invalidarCampo($versao);
+				contemErros = true;
+			}
+			else{
+				validarCampo($versao);
+			}
+			//CODIGO CONDOMINO
+			var codigoCondominio = config.codigoCondominio;
+			if(codigoCondominio == undefined || codigoCondominio === "" || isNaN(codigoCondominio || codigoCondominio > 4)){
+				invalidarCampo($codigoCondominio);
+				contemErros = true;
+			}
+			else{
+				validarCampo($codigoCondominio);
+			}
+			//DATA LEITURA
+			var dataLeitura = config.dataLeitura;
+			if(dataLeitura == undefined || dataLeitura === ""){
+				invalidarCampo($dataLeitura);
+				contemErros = true;
+			}
+			else{
+				validarCampo($dataLeitura);
+			}
+			//MES
+			var mes = config.mes;
+			if(mes == undefined || mes === ""){
+				invalidarCampo($mes);
+				contemErros = true;
+			}
+			else{
+				validarCampo($mes);
+			}
+			//ANO
+			var ano = config.ano;
+			if(ano == undefined || ano === ""){
+				invalidarCampo($ano);
+				contemErros = true;
+			}
+			else{
+				validarCampo($ano);
+			}
+
+			function resetarCampos(){
+				$(".invalido").removeClass("invalido");
+			}
+
+			function invalidarCampo($elemento){
+				if($elemento instanceof jQuery){
+					$elemento.removeClass("valido").addClass("invalido");
+				}
+			}
+
+			function validarCampo($elemento){
+				if($elemento instanceof jQuery){
+					$elemento.removeClass("invalido").addClass("valido");
+				}
+			}
+
+			console.log(contemErros)
+
+			return contemErros;
+		},
+
+		gerar : function(){
+			//Build Config
+			try{
+				self.config = this.buildConfig();
+			}
+			catch(err){
+				return this.mostrarMensagemErro(err);
+			}
+			//Get Workbook
+			if(workbook == undefined){
+				return this.mostrarMensagemErro("É necessário fazer upload de um arquivo .xlsx.");
+			}
+
+			if(workbook.SheetNames.length < 1){
+				return this.mostrarMensagemErro("O arquivo não possui planilhas criadas.");
+			}
+			
+			sheet = workbook.Sheets[workbook.SheetNames[0]]
+			//Erro Interno da Biblioteca
+			if(sheet == undefined){
+				return this.mostrarMensagemErro("Um erro ocorreu ao processar o arquivo.")
+			}	
+		}	
 	}
-}
-
-function handleDragover(e) {
-	e.stopPropagation();
-	e.preventDefault();
-	e.dataTransfer.dropEffect = 'copy';
-}
-
-if(drop.addEventListener) {
-	drop.addEventListener('dragenter', handleDragover, false);
-	drop.addEventListener('dragover', handleDragover, false);
-	drop.addEventListener('drop', handleDrop, false);
-}
-
+}());
 

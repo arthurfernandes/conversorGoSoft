@@ -1,4 +1,4 @@
-#drop{
+#drop-planilha{
 	border:2px dashed #bbb;
 	-moz-border-radius:5px;
 	-webkit-border-radius:5px;
@@ -8,3 +8,10 @@
 	font:20pt bold,"Vollkorn";color:#bbb
 }
 
+.invalido{
+	border-color: red;
+}
+
+.valido{
+	border-color: green;
+}

@@ -15,24 +15,95 @@
       <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
+
+    <!-- Alertify -->
+    <link href="alertify.js-0.3.11/themes/alertify.core.css" rel="stylesheet">
+    <link href="alertify.js-0.3.11/themes/alertify.default.css" rel="stylesheet">
+    <!--link href="alertify.js-0.3.11/themes/alertify.bootstrap.css" rel="stylesheet"-->
     <link href="css/index-style.css" rel="stylesheet">
 </head>
 <body>
-	<a href="https://github.com/SheetJS/js-xlsx">Github Repo-xlsx</a><br>
-<a href="https://github.com/SheetJS/js-xls">Github Repo-xls</a><br>
-<input type="radio" name="format" value="csv" > CSV<br>
-<input type="radio" name="format" value="json" checked=""> JSON<br>
-<input type="radio" name="format" value="form"> FORMULAE<br>
+	<div class="container container-fluid">
+		<div class="form-horizontal">
+			<fieldset>
 
-	<div id="drop">Drop an XLSX file here to see sheet data.</div>
-<!-- <textarea id="b64data">... or paste a base64-encoding here</textarea> -->
-<!-- <input type="button" id="dotext" value="Click here to process the base64 text" onclick="b64it();"> -->
-<pre id="out"></pre>
-<br>
+			<!-- Form Name -->
+			<legend></legend>
+
+			<!-- Text input-->
+			<div class="form-group">
+			  <label class="col-md-4 control-label" for="tipo">Tipo</label>  
+			  <div class="col-md-4">
+			  <input id="tipo" name="tipo" type="text" placeholder="Tipo de Consumo" class="form-control input-md">
+			    
+			  </div>
+			</div>
+
+			<!-- Text input-->
+			<div class="form-group">
+			  <label class="col-md-4 control-label" for="versao">Versão</label>  
+			  <div class="col-md-4">
+			  <input id="versao" name="versao" type="text" placeholder="Versão do Layout" class="form-control input-md">
+			  </div>
+			</div>
+
+			<!-- Text input-->
+			<div class="form-group">
+			  <label class="col-md-4 control-label" for="codigo-condominio">Código do Condomínio</label>  
+			  <div class="col-md-4">
+			  <input id="codigo-condominio" name="codigo-condominio" type="text" placeholder="Código do Condomínio" class="form-control input-md">
+			  </div>
+			</div>
+
+			<!-- Text input-->
+			<div class="form-group">
+			  <label class="col-md-4 control-label" for="data-leitura">Data da Leitura</label>  
+			  <div class="col-md-4">
+			  <input id="data-leitura" name="data-leitura" type="text" placeholder="Data da Leitura" class="form-control input-md">
+			  </div>
+			</div>
+
+			<!-- Text input-->
+			<div class="form-group">
+			  <label class="col-md-4 control-label" for="mes">Mês</label>  
+			  <div class="col-md-4">
+			  <input id="mes" name="mes" type="text" placeholder="Mês de Referência" class="form-control input-md">
+			  </div>
+			</div>
+
+			<!-- Text input-->
+			<div class="form-group">
+			  <label class="col-md-4 control-label" for="ano">Ano</label>  
+			  <div class="col-md-4">
+			  <input id="ano" name="ano" type="text" placeholder="Ano de Referência" class="form-control input-md">
+			  </div>
+			</div>
+
+			<!-- Drag and Drop -->
+			<div class="form-group">
+				<label class="col-md-4 control-label" for="drop-planilha"></label>
+				<div class="col-md-4">
+					<div id="drop-planilha" class="col-xs-12">Arraste sua planilha aqui.</div>
+				</div>	
+			</div>
+			
+
+			<!-- Button -->
+			<div class="form-group">
+			  <label class="col-md-4 control-label" for="gerar-arquivo"></label>
+			  <div class="col-md-4">
+			    <button id="gerar-arquivo" name="gerar-arquivo" class="btn btn-success col-xs-12" onclick="ConversorDados.gerar()">Gerar Arquivo</button>
+			  </div>
+			</div>
+
+			</fieldset>
+		</form>
+	</div>
 	<script src="js/jquery-1.12.1.min.js"></script>
 	<script src="bootstrap-3.3.6-dist/js/bootstrap.min.js"></script>
 	<script src="js/jszip.min.js"></script>
 	<script src="js/xlsx.js"></script>
+	<script src="alertify.js-0.3.11/lib/alertify.min.js"></script>
 	<script src="js/processData.js"></script>
 </body>
 </html>
