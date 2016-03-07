@@ -2,6 +2,7 @@
 * @requires XLSX
 * @requires jQuery as $
 * @requires alertify
+* @requires saveAs from FileSaver
 */
 
 "use strict"
@@ -14,6 +15,7 @@ var ConversorUTILS = function(){
 }();
 
 var ConversorDados = (function(){
+	var self = this;
 	//CACHE DOM
 	var $tipo = $("#tipo"); 
 	var $versao = $("#versao"); 
@@ -23,8 +25,11 @@ var ConversorDados = (function(){
 	var $ano = $("#ano");
 
 	var $dropPlanilha = $("#drop-planilha");
-	
+	var $salvarConfiguracao = $("#salvar-configuracao");
+	var $importarConfiguracao = $("#importar-configuracao");
+	var $fileImportarConfiguracao = $("#importar-configuracao :file");
 	var workbook = undefined;
+	var config = undefined;
 	//Bind Events
 	function _handleDrop(e) {
 		e.stopPropagation();
@@ -46,6 +51,7 @@ var ConversorDados = (function(){
 						workbook = wb;
 				   } catch(e){
 				      console.log(e, e.stack);
+				      return mostrarMensagemErro("Um erro ocorreu durante a leitura do arquivo.");
 				   }
 				   console.log("Stop....");
 				}
@@ -69,15 +75,92 @@ var ConversorDados = (function(){
 		$dropPlanilha.get(0).addEventListener('drop', _handleDrop, false);
 	}
 
+	$(document).on('change','.btn-file :file',function(){
+		var input = $(this);
+		var numFiles = input.get(0).files ? input.get(0).files.length : 1;
+		var label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+		input.trigger('fileselect',[numFiles,label]);
+	});
+
+	$fileImportarConfiguracao.on('fileselect',function(event,numFiles,label){
+		if(numFiles < 1){
+			return mostrarMensagemErro("Nenhum arquivo foi selecionado.");
+		}
+		else{
+			console.log(this);
+			var file = this.files[0];
+			var reader = new FileReader();
+			reader.onload = function(){
+				try{
+					config = JSON.parse(reader.result);
+				}
+				catch(err){
+					return mostrarMensagemErro("A configuração a ser importada é inválida.");
+				}
+
+				$tipo.val(config["tipo"]);
+				$versao.val(config["versao"]);
+				$codigoCondominio.val(config["codigoCondominio"]);
+				$dataLeitura.val(config["dataLeitura"]);
+				$mes.val(config["mes"]);
+				$ano.val(config["ano"]);
+			}
+			reader.readAsText(file);
+		}
+	});
+
+	//Inner functions
+	function mostrarMensagemErro(mensagem){
+		alertify.alert(mensagem);
+	}
+
+	function getValorBloco(celulaBloco,localizacao){
+		if(celulaBloco == undefined || celulaBloco.w === ""){
+			mostrarMensagemErro("Ocorreu um erro ao processar a solicitacao em: "+ localizacao);
+			throw "Erro em: " + localizacao;
+		}
+		var valorBloco = celulaBloco['w'].replace('Bloco').trim();
+		if(valorBloco.length > 4){
+			mostrarMensagemErro("Ocorreu um erro em :"+localizacao+", o bloco possui mais de 4 caracteres.");
+			throw "Erro em : " + localizacao;
+		}
+		else{
+			return valorBloco;
+		}
+	}
+
+	function getNumeroApartamento(celulaApartamento,localizacao){
+		if(celulaApartamento == undefined || celulaApartamento.w === ""){
+			mostrarMensagemErro("Ocorreu um erro ao processar a solicitacao em : "+ localizacao);
+			throw "Erro em: "+localizacao;
+		}
+		var valorApartamento = celulaApartamento['w'].trim();
+		if(valorApartamento.length > 6){
+			mostrarMensagemErro("Ocorreu um erro em :"+localizacao+", o apartamento possui mais de 6 caracteres.");
+			throw "Erro em: "+localizacao;
+		}
+		else{
+			return valorApartamento;
+		}
+	}
+
+	function getValorLeituraAnterior(celulaLeituraAtual,localizacao){
+		
+	}
+
+	function getValorLeituraAtual(celulaLeituraAtual,localizacao){
+
+	}
+
+	function getValorConsumo(celulaConsumo,localizacao){
+
+	}
+
+	function getValor(celulaValor,localizacao){
+
+	}
+
 	return {
-		esconderMensagemErro : function(){
-			// self.$mensagemErro.hide();
-		},
-
-	 	mostrarMensagemErro : function(mensagem){
-			alertify.alert(mensagem);
-		},
-
 	    buildConfig : function(){
 			var config = {};
 			config.tipo = $tipo.val();
@@ -169,34 +252,64 @@ var ConversorDados = (function(){
 				}
 			}
 
-			console.log(contemErros)
-
 			return contemErros;
 		},
 
-		gerar : function(){
+		gerarArquivo : function(){
 			//Build Config
 			try{
-				self.config = this.buildConfig();
+				config = this.buildConfig();
 			}
 			catch(err){
-				return this.mostrarMensagemErro(err);
+				return mostrarMensagemErro(err);
 			}
 			//Get Workbook
 			if(workbook == undefined){
-				return this.mostrarMensagemErro("É necessário fazer upload de um arquivo .xlsx.");
+				return mostrarMensagemErro("É necessário fazer upload de um arquivo .xlsx.");
 			}
 
 			if(workbook.SheetNames.length < 1){
-				return this.mostrarMensagemErro("O arquivo não possui planilhas criadas.");
+				return mostrarMensagemErro("O arquivo não possui planilhas criadas.");
 			}
 			
 			sheet = workbook.Sheets[workbook.SheetNames[0]]
 			//Erro Interno da Biblioteca
 			if(sheet == undefined){
-				return this.mostrarMensagemErro("Um erro ocorreu ao processar o arquivo.")
+				return mostrarMensagemErro("Um erro ocorreu ao processar o arquivo.")
 			}	
-		}	
+
+			var localizacaoDoPrimeiroBloco = "A10";
+			var offsetBlocoApartamento = 3;
+			var linhaAtual = 10;
+			var celulaBloco = sheet[localizacaoDoPrimeiroBloco]
+			if(celulaBloco == undefined){
+				return mostrarMensagemErro("A planilha não contém um bloco na localização A10");
+			}
+
+			while(celulaBloco != undefined){
+				try{
+					config["bloco"] = getValorBloco(celulaBloco);
+				}
+				catch(err){
+					return;
+				}
+
+
+				var celulaBloco = sheet["A" + linhaAtual]; 
+			}
+		},	
+
+		salvarConfiguracao : function(){
+			//Build Config
+			try{
+				var config = this.buildConfig();
+			}
+			catch(err){
+				return mostrarMensagemErro(err);
+			}
+			var blob = new Blob([JSON.stringify(config)], {type: "text/plain;charset=utf-8"});
+			saveAs(blob, "configuracao.cfg");
+		},
 	}
 }());
 

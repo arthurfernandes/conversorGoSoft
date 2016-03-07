@@ -23,7 +23,7 @@
     <link href="css/index-style.css" rel="stylesheet">
 </head>
 <body>
-	<div class="container container-fluid">
+	<div id="container" class="container container-fluid">
 		<div class="form-horizontal">
 			<fieldset>
 
@@ -87,12 +87,26 @@
 				</div>	
 			</div>
 			
+			<div class="form-group">
+				<label class="col-md-4 control-label" for="importar-configuracao"></label>
+				<div class="col-md-4">
+					<span id="importar-configuracao" name="importar-configuracao" class="btn btn-danger btn-file col-xs-12">Importar Configuração<input type="file"></span>
+				</div>
+			</div>
+
+			<!-- Button -->
+			<div class="form-group">
+			  <label class="col-md-4 control-label" for="salvar-configuracao"></label>
+			  <div class="col-md-4">
+			    <button id="salvar-configuracao" name="salvar-configuracao" class="btn btn-info col-xs-12" onclick="ConversorDados.salvarConfiguracao()">Salvar Configuração</button>
+			  </div>
+			</div>
 
 			<!-- Button -->
 			<div class="form-group">
 			  <label class="col-md-4 control-label" for="gerar-arquivo"></label>
 			  <div class="col-md-4">
-			    <button id="gerar-arquivo" name="gerar-arquivo" class="btn btn-success col-xs-12" onclick="ConversorDados.gerar()">Gerar Arquivo</button>
+			    <button id="gerar-arquivo" name="gerar-arquivo" class="btn btn-success col-xs-12" onclick="ConversorDados.gerarArquivo()">Gerar Arquivo</button>
 			  </div>
 			</div>
 
@@ -104,6 +118,8 @@
 	<script src="js/jszip.min.js"></script>
 	<script src="js/xlsx.js"></script>
 	<script src="alertify.js-0.3.11/lib/alertify.min.js"></script>
+	<script src="js/FileSaver.min.js"></script>
 	<script src="js/processData.js"></script>
+
 </body>
 </html>
