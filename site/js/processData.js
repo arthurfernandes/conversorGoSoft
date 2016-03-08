@@ -416,7 +416,7 @@ var ConversorDados = (function(){
 			//VALOR
 			data += virgulaDecimal(config.valor,12,2);
 			//NEWLINE
-			data += '\n';
+			data += '\r\n';
 			return data;
 		},
 
