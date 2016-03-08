@@ -24,17 +24,15 @@
 </head>
 <body>
 	<div id="container" class="container container-fluid">
-		<div class="form-horizontal">
+		
+		<div class="form-horizontal" style="clear:left">
 			<fieldset>
-
-			<!-- Form Name -->
-			<legend></legend>
-
+			<legend><img class="logo" src="img/logo.png"></img><h3 class="logo-text">Formulário GoSoft</h3></legend>
 			<!-- Text input-->
 			<div class="form-group">
 			  <label class="col-md-4 control-label" for="tipo">Tipo</label>  
 			  <div class="col-md-4">
-			  <input id="tipo" name="tipo" type="text" placeholder="Tipo de Consumo" class="form-control input-md">
+			  <input id="tipo" maxlength="10" name="tipo" type="text" placeholder="Tipo de Consumo" class="form-control input-md">
 			    
 			  </div>
 			</div>
@@ -43,7 +41,7 @@
 			<div class="form-group">
 			  <label class="col-md-4 control-label" for="versao">Versão</label>  
 			  <div class="col-md-4">
-			  <input id="versao" name="versao" type="text" placeholder="Versão do Layout" class="form-control input-md">
+			  <input id="versao" name="versao" maxlength="2" type="text" placeholder="Versão do Layout" class="form-control input-md">
 			  </div>
 			</div>
 
@@ -51,7 +49,7 @@
 			<div class="form-group">
 			  <label class="col-md-4 control-label" for="codigo-condominio">Código do Condomínio</label>  
 			  <div class="col-md-4">
-			  <input id="codigo-condominio" name="codigo-condominio" type="text" placeholder="Código do Condomínio" class="form-control input-md">
+			  <input id="codigo-condominio" maxlength="4"name="codigo-condominio" type="text" placeholder="Código do Condomínio" class="form-control input-md">
 			  </div>
 			</div>
 
@@ -59,7 +57,7 @@
 			<div class="form-group">
 			  <label class="col-md-4 control-label" for="data-leitura">Data da Leitura</label>  
 			  <div class="col-md-4">
-			  <input id="data-leitura" name="data-leitura" type="text" placeholder="Data da Leitura" class="form-control input-md">
+			  <input id="data-leitura" maxlength="10" name="data-leitura" type="text" placeholder="Data da Leitura" class="form-control input-md">
 			  </div>
 			</div>
 
@@ -67,7 +65,7 @@
 			<div class="form-group">
 			  <label class="col-md-4 control-label" for="mes">Mês</label>  
 			  <div class="col-md-4">
-			  <input id="mes" name="mes" type="text" placeholder="Mês de Referência" class="form-control input-md">
+			  <input id="mes" maxlength="2" name="mes" type="text" placeholder="Mês de Referência" class="form-control input-md">
 			  </div>
 			</div>
 
@@ -75,7 +73,7 @@
 			<div class="form-group">
 			  <label class="col-md-4 control-label" for="ano">Ano</label>  
 			  <div class="col-md-4">
-			  <input id="ano" name="ano" type="text" placeholder="Ano de Referência" class="form-control input-md">
+			  <input id="ano" name="ano" maxlength="4" type="text" placeholder="Ano de Referência" class="form-control input-md">
 			  </div>
 			</div>
 
